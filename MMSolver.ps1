@@ -589,8 +589,8 @@ if ($hwnd -ne [IntPtr]::Zero) {
        $rect = New-Object Win32+RECT
     [Win32]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
 
-    $newWidth = 640
-    $newHeight = 750
+    $newWidth = 370 #was 640, then 500
+    $newHeight = 700
 
     [Win32]::SetWindowPos($hwnd, [Win32]::HWND_TOPMOST, 
                          $rect.Left, $rect.Top, 
