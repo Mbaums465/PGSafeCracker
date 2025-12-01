@@ -224,6 +224,64 @@ $CssStyles = @"
         .alert {
             margin-bottom: 12px;
         }
+        
+        /* ================================================
+           ICON PICKER STYLES
+           ================================================ */
+        .icon-picker {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        .icon-picker-row {
+            display: flex;
+            gap: 3px;
+            justify-content: flex-start;
+        }
+        .icon-pick-btn {
+            width: 40px;
+            height: 40px;
+            padding: 2px;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .icon-pick-btn:hover {
+            border-color: #007bff;
+            background: #e7f1ff;
+        }
+        .icon-pick-btn:active {
+            transform: scale(0.95);
+        }
+        .icon-pick-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .custom-guess-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 32px;
+        }
+        .custom-guess-icons {
+            display: flex;
+            gap: 2px;
+        }
+        .custom-guess-icons .icon-display {
+            width: 28px;
+            height: 28px;
+        }
+        .clear-custom-btn {
+            padding: 2px 8px;
+            font-size: 0.75em;
+        }
+        .solution-icons {
+            margin-top: 6px;
+        }
     </style>
 </head>
 <body>
@@ -268,8 +326,30 @@ $CssStyles = @"
                     <div class="guess-display">{{{guessHtml}}}</div>
                 </div>
                 <div class="mb-2">
-                    <label class="compact-label">Or enter your own (e.g., T1,T3,B5,B2):</label>
-                    <input type="text" class="form-control form-control-sm custom-guess-input" placeholder="T1,T2,B1,B2">
+                    <label class="compact-label">Or click icons to build your own:</label>
+                    <div class="icon-picker">
+                        <div class="icon-picker-row">
+                            <button type="button" class="icon-pick-btn" data-icon="T1"><img src="" data-icon-src="T1" class="icon-pick-img" alt="T1"></button>
+                            <button type="button" class="icon-pick-btn" data-icon="T2"><img src="" data-icon-src="T2" class="icon-pick-img" alt="T2"></button>
+                            <button type="button" class="icon-pick-btn" data-icon="T3"><img src="" data-icon-src="T3" class="icon-pick-img" alt="T3"></button>
+                            <button type="button" class="icon-pick-btn" data-icon="T4"><img src="" data-icon-src="T4" class="icon-pick-img" alt="T4"></button>
+                            <button type="button" class="icon-pick-btn" data-icon="T5"><img src="" data-icon-src="T5" class="icon-pick-img" alt="T5"></button>
+                            <button type="button" class="icon-pick-btn" data-icon="T6"><img src="" data-icon-src="T6" class="icon-pick-img" alt="T6"></button>
+                        </div>
+                        <div class="icon-picker-row">
+                            <button type="button" class="icon-pick-btn" data-icon="B1"><img src="" data-icon-src="B1" class="icon-pick-img" alt="B1"></button>
+                            <button type="button" class="icon-pick-btn" data-icon="B2"><img src="" data-icon-src="B2" class="icon-pick-img" alt="B2"></button>
+                            <button type="button" class="icon-pick-btn" data-icon="B3"><img src="" data-icon-src="B3" class="icon-pick-img" alt="B3"></button>
+                            <button type="button" class="icon-pick-btn" data-icon="B4"><img src="" data-icon-src="B4" class="icon-pick-img" alt="B4"></button>
+                            <button type="button" class="icon-pick-btn" data-icon="B5"><img src="" data-icon-src="B5" class="icon-pick-img" alt="B5"></button>
+                            <button type="button" class="icon-pick-btn" data-icon="B6"><img src="" data-icon-src="B6" class="icon-pick-img" alt="B6"></button>
+                        </div>
+                    </div>
+                    <div class="custom-guess-display mt-1">
+                        <div class="custom-guess-icons"></div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm clear-custom-btn" style="display:none;">Clear</button>
+                    </div>
+                    <input type="hidden" class="custom-guess-input" value="">
                 </div>
                 <div class="row">
                     <div class="col-6">
@@ -507,7 +587,7 @@ $ConfigJS
                 `$success.show();
                 `$playAreaCurGuess.html('<div class="alert alert-info py-2"><strong>Game Over!</strong> Click Reset to play again.</div>');
             } else {
-                 `$playAreaCurGuess.html('<div class="alert alert-info py-2"><strong>Solution Found:</strong> ' + toGuessHtml(solution) + '<br>Enter this as your next guess to confirm.</div>' +
+                 `$playAreaCurGuess.html('<div class="alert alert-info py-2"><strong>Solution Found:</strong><div class="solution-icons">' + toGuessHtml(solution) + '</div>Enter this as your next guess to confirm.</div>' +
                                           '<div class="card mb-3"><div class="card-body"><button class="btn btn-success btn-sm btn-block submit-combined">Fill Solution</button></div></div>');
                  `$playAreaCurGuess.find('.card').data('suggestedGuess', solution);
             }
@@ -650,6 +730,56 @@ $ConfigJS
     // Recalculates everything when any input in history changes
     `$playAreaOldGuesses.on('change', 'input[type="number"], input[type="checkbox"]', function() {
         updateUiWithAGuess();
+    });
+    
+    // ========================================================================
+    // ICON PICKER FUNCTIONALITY
+    // ========================================================================
+    
+    // Initialize icon picker images when card is rendered
+    function initIconPicker() {
+        `$playAreaCurGuess.find('.icon-pick-btn').each(function() {
+            let icon = `$(this).data('icon');
+            `$(this).find('img').attr('src', iconData[icon]);
+        });
+    }
+    
+    // Watch for new card being added and initialize icon picker
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length) {
+                initIconPicker();
+            }
+        });
+    });
+    observer.observe(document.getElementById('cur-guess'), { childList: true });
+    
+    // Handle icon button clicks
+    `$playAreaCurGuess.on('click', '.icon-pick-btn', function() {
+        let icon = `$(this).data('icon');
+        let `$input = `$playAreaCurGuess.find('.custom-guess-input');
+        let `$iconsDisplay = `$playAreaCurGuess.find('.custom-guess-icons');
+        let `$clearBtn = `$playAreaCurGuess.find('.clear-custom-btn');
+        
+        let currentVal = `$input.val();
+        let icons = currentVal ? currentVal.split(',') : [];
+        
+        // Only add if we haven't reached max pegs
+        if (icons.length < NUM_PEGS) {
+            icons.push(icon);
+            `$input.val(icons.join(','));
+            
+            // Update visual display
+            `$iconsDisplay.html(icons.map(toIconHtml).join(''));
+            `$clearBtn.show();
+        }
+    });
+    
+    // Handle clear button
+    `$playAreaCurGuess.on('click', '.clear-custom-btn', function() {
+        `$playAreaCurGuess.find('.custom-guess-input').val('');
+        `$playAreaCurGuess.find('.custom-guess-icons').empty();
+        `$(this).hide();
     });
     
     // Auto-start
